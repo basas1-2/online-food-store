@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Post - Food store</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="site-nav">
+        <div class="nav-brand">Food store</div>
+        <div>
+            <a href="index.html">Home</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="postDetail" class="card" style="max-width:800px;margin:24px auto;">
+            Loading...
+        </div>
+    </div>
+
+    <script>
+        function qs(name) {
+            const params = new URLSearchParams(location.search);
+            return params.get(name);
+        }
+        (async function () {
+            const id = qs('id');
+            if (!id) {
+                document.getElementById('postDetail').innerText = 'No post specified';
+                return;
+            }
+            try {
+                const res = await fetch('/posts/' + id);
+                if (!res.ok) {
+                    document.getElementById('postDetail').innerText = 'Post not found';
+                    return;
+                }
+                const p = await res.json();
+                document.getElementById('postDetail').innerHTML = `
+      ${p.image ? `<img class="post-full" src="${p.image}" alt="${p.title}">` : ''}
+      <h2 style="color:var(--primary)">${escapeHtml(p.title)}</h2>
+      <p>${escapeHtml(p.content)}</p>
+    `;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('postDetail').innerText = 'Error loading post';
+            }
+        })();
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                ? unsafe.replace(/[&<>\"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+                : '';
+        }
+    </script>
+
+</body>
+
+</html>

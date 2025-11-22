@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Notifications - Food store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="nav-brand">Food store</div>
+  <div>
+    <a href="index.html">Home</a>
+    <a id="navAdmin" href="admin.html" style="display:none">Admin</a>
+    <a id="logoutBtn" href="#">Logout</a>
+  </div>
+</nav>
+
+<div class="container">
+  <h2>Your Notifications</h2>
+  <div id="notifications" class="card">Loading...</div>
+</div>
+
+<script>
+// show navAdmin when admin
+const role = localStorage.getItem('role');
+if (role === 'admin') document.getElementById('navAdmin').style.display = 'inline';
+
+const logoutBtn = document.getElementById('logoutBtn');
+logoutBtn.onclick = () => { localStorage.removeItem('token'); localStorage.removeItem('role'); localStorage.removeItem('userId'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); window.location='login.html'; };
+
+async function loadNotifications() {
+  const who = localStorage.getItem('userId') || localStorage.getItem('userEmail');
+  const el = document.getElementById('notifications');
+  if (!who) { el.innerText = 'Please login to see notifications'; return; }
+  try {
+    const res = await fetch('/posts/notifications/user/' + encodeURIComponent(who));
+    if (!res.ok) { el.innerText = 'Error loading notifications'; return; }
+    const notes = await res.json();
+    if (!notes.length) { el.innerText = 'No notifications'; return; }
+    el.innerHTML = notes.map(n => `
+      <div style="border-bottom:1px solid #eee;padding:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${n.message}</strong><br><small>${new Date(n.createdAt).toLocaleString()}</small></div>
+          <div>
+            ${n.read ? '<em style="color:green">Read</em>' : `<button onclick="markRead('${n._id}')">Mark read</button>`}
+          </div>
+        </div>
+        ${n.meta ? `<div style="font-size:13px;margin-top:6px">Amount: ${n.meta.amount || ''} &nbsp; Qty: ${n.meta.quantity || ''}</div>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error(err);
+    el.innerText = 'Error loading notifications';
+  }
+}
+
+async function markRead(id) {
+  try {
+    const res = await fetch('/posts/notifications/' + id + '/read', { method: 'POST' });
+    if (!res.ok) return alert('Failed to mark read');
+    loadNotifications();
+  } catch (err) { console.error(err); }
+}
+
+loadNotifications();
+</script>
+</body>
+</html>

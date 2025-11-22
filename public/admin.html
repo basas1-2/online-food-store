@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Admin - Food store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <nav class="site-nav">
+    <div class="nav-brand">Food store - Admin</div>
+    <div>
+      <a href="index.html">Home</a>
+      <a id="navNotifications" href="notifications.html" style="display:none">Notifications</a>
+      <a id="logoutBtn" href="#">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2 class="center">Admin Post Manager</h2>
+
+    <form class="card" id="createForm">
+      <input name="title" placeholder="Post title" required>
+      <textarea name="content" placeholder="Post content" required></textarea>
+      <input name="price" placeholder="Price" type="number" step="0.01" required>
+      <input type="file" name="image" accept="image/*">
+      <button class="primary" type="submit">Create Post</button>
+    </form>
+
+  <h3>Notifications</h3>
+  <div id="adminNotifications" class="card" style="margin-bottom:18px; max-height:220px; overflow:auto">Loading...</div>
+
+  <div id="adminPosts" class="post-grid"></div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+    if (!token) {
+      alert('Please login');
+      window.location = 'login.html';
+    }
+    if (role !== 'admin') {
+      alert('Access denied');
+      window.location = 'index.html';
+    }
+
+        // show notifications link for logged-in admin
+        document.getElementById('navNotifications').style.display = 'inline';
+
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      window.location = 'login.html';
+    };
+
+    async function loadAdminPosts() {
+      const res = await fetch('/posts');
+      const posts = await res.json();
+      document.getElementById('adminPosts').innerHTML = posts.map(p => `
+      <div class="post">
+        ${p.image ? `<img class="thumb" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
+        <h3>${escapeHtml(p.title)}</h3>
+        <p>${escapeHtml(p.content)}</p>
+        <div>Price: ${p.price || 0}</div>
+        <div class="actions">
+          <button class="btn-edit" onclick="editPost('${p._id}','${escapeJs(p.title)}','${escapeJs(p.content)}', ${p.price || 0})">Edit</button>
+          <button class="btn-delete" onclick="deletePost('${p._id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        ? unsafe.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+        : '';
+    }
+    function escapeJs(s) { return (s || '').replace(/'/g, "\\'").replace(/"/g, '\"').replace(/\n/g, '\\n'); }
+
+    loadAdminPosts();
+
+    // load admin notifications
+    async function loadAdminNotifications() {
+      try {
+        const res = await fetch('/posts/notifications/admin', { headers: { 'Authorization': token } });
+        if (!res.ok) {
+          document.getElementById('adminNotifications').innerText = 'No notifications or access denied';
+          return;
+        }
+        const notes = await res.json();
+        if (!notes.length) {
+          document.getElementById('adminNotifications').innerText = 'No notifications';
+          return;
+        }
+        document.getElementById('adminNotifications').innerHTML = notes.map(n => {
+          const m = n.meta || {};
+          return `
+            <div style="border-bottom:1px solid #eee;padding:8px">
+              <strong>${n.message}</strong><br>
+              <small>${new Date(n.createdAt).toLocaleString()}</small>
+              <div>Buyer: ${m.buyerName || m.buyerEmail || ''} (${m.buyerEmail || ''})</div>
+              <div>Amount: ${m.amount || 0} &nbsp; Qty: ${m.quantity || 0}</div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error(err);
+        document.getElementById('adminNotifications').innerText = 'Error loading notifications';
+      }
+    }
+
+    loadAdminNotifications();
+
+    document.getElementById('createForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const fd = new FormData(form);
+      try {
+        const res = await fetch('/posts/create', {
+          method: 'POST',
+          headers: { 'Authorization': token },
+          body: fd
+        });
+        if (!res.ok) {
+          const json = await res.json();
+          alert(json.msg || 'Error creating post');
+          return;
+        }
+        alert('Created');
+        loadAdminPosts();
+        form.reset();
+      } catch (err) {
+        console.error(err);
+        alert('Error creating post');
+      }
+    };
+
+    async function deletePost(id) {
+      if (!confirm('Delete this post?')) return;
+      await fetch('/posts/' + id, { method: 'DELETE', headers: { 'Authorization': token } });
+      alert('Deleted');
+      loadAdminPosts();
+    }
+
+    async function editPost(id, oldTitle, oldContent, oldPrice) {
+      const title = prompt('New title', oldTitle);
+      const content = prompt('New content', oldContent);
+      const price = prompt('New price', oldPrice || 0);
+      if (!title || !content) return;
+      await fetch('/posts/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
+        body: JSON.stringify({ title, content, price: parseFloat(price) || 0 })
+      });
+      alert('Updated');
+      loadAdminPosts();
+    }
+  </script>
+
+</body>
+
+</html>

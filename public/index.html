@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Home - Food store</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <nav class="site-nav">
+    <div class="nav-brand">Food store</div>
+    <div>
+      <a href="index.html">Home</a>
+      <a id="navNotifications" href="notifications.html" style="display:none">Notifications</a>
+      <a id="navAdmin" href="admin.html" style="display:none">Admin</a>
+      <a id="logoutBtn" href="#" style="display:none">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2>Latest Posts</h2>
+    <div id="posts" class="post-grid"></div>
+  </div>
+
+  <!-- Stripe.js -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <script>
+    // JWT protection: require login to see home
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    if (!token) {
+      alert('Please login first');
+      window.location = 'login.html';
+    }
+
+    if (role === 'admin') {
+      document.getElementById('navAdmin').style.display = 'inline';
+    }
+    // show notifications link for any logged in user
+    document.getElementById('navNotifications').style.display = 'inline';
+
+    document.getElementById('logoutBtn').style.display = 'inline';
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role');
+      window.location = 'login.html';
+    };
+
+    async function loadPosts() {
+      try {
+        const res = await fetch('/posts');
+        const posts = await res.json();
+        const container = document.getElementById('posts');
+        container.innerHTML = posts.map(p => `
+        <div class="post">
+          ${p.image ? `<img class="thumb" src="${p.image}" alt="${escapeHtml(p.title)}">` : ''}
+          <h3>${escapeHtml(p.title)}</h3>
+          <p>${escapeHtml(p.content).slice(0, 200)}${p.content && p.content.length > 200 ? '...' : ''}</p>
+          <div style="margin-top:10px">
+            <label>Qty: <input type="number" min="1" value="1" id="qty-${p._id}" style="width:70px"></label>
+            <button onclick="pay('${p._id}', ${p.price || 0})">Pay</button>
+            <a href="post.html?id=${p._id}" style="margin-left:8px">See more</a>
+          </div>
+        </div>
+    `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function escapeHtml(unsafe) {
+      return unsafe
+        ? unsafe.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+        : '';
+    }
+
+    loadPosts();
+
+    // payment function using Stripe Checkout
+    async function pay(postId, unitPrice) {
+      const qtyEl = document.getElementById('qty-' + postId);
+      const qty = parseInt(qtyEl ? qtyEl.value : '1', 10) || 1;
+      const buyerId = localStorage.getItem('userId') || '';
+      const buyerName = localStorage.getItem('userName') || '';
+      const buyerEmail = localStorage.getItem('userEmail') || '';
+
+      if (!buyerEmail) {
+        alert('Buyer info missing. Please login.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/posts/' + postId + '/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ quantity: qty, buyerId, buyerName, buyerEmail })
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.msg || 'Error creating checkout'); return; }
+        // load Stripe and redirect
+        const stripePub = data.publishableKey;
+        if (!stripePub) { alert('Stripe not configured'); return; }
+        const stripe = Stripe(stripePub);
+        await stripe.redirectToCheckout({ sessionId: data.sessionId });
+      } catch (err) {
+        console.error(err);
+        alert('Payment error');
+      }
+    }
+
+    // load user notifications into panel
+    async function loadUserNotifications(who) {
+      const el = document.getElementById('userNotifications');
+      if (!who) { el.innerText = 'Please login to see notifications'; return; }
+      try {
+        const res = await fetch('/posts/notifications/user/' + encodeURIComponent(who));
+        if (!res.ok) { el.innerText = 'Error loading notifications'; return; }
+        const notes = await res.json();
+        if (!notes.length) { el.innerText = 'No notifications'; return; }
+        el.innerHTML = notes.map(n => `
+          <div style="border-bottom:1px solid #eee;padding:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div><strong>${n.message}</strong><br><small>${new Date(n.createdAt).toLocaleString()}</small></div>
+              <div>
+                ${n.read ? '<em style="color:green">Read</em>' : `<button onclick="markRead('${n._id}')">Mark read</button>`}
+              </div>
+            </div>
+            ${n.meta ? `<div style="font-size:13px;margin-top:6px">Amount: ${n.meta.amount || ''} &nbsp; Qty: ${n.meta.quantity || ''}</div>` : ''}
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+        el.innerText = 'Error loading notifications';
+      }
+    }
+
+    async function markRead(id) {
+      try {
+        const res = await fetch('/posts/notifications/' + id + '/read', { method: 'POST' });
+        if (!res.ok) return alert('Failed to mark read');
+        const who = localStorage.getItem('userId') || localStorage.getItem('userEmail');
+        loadUserNotifications(who);
+      } catch (err) { console.error(err); }
+    }
+
+    // auto-load current user's notifications
+    const who = localStorage.getItem('userId') || localStorage.getItem('userEmail');
+    if (who) loadUserNotifications(who);
+  </script>
+
+</body>
+
+</html>
