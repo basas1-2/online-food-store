@@ -6,7 +6,7 @@
   <title>Products - Food store</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="products-page">
 <nav class="site-nav">
   <div class="nav-brand">Food store</div>
   <div>
@@ -22,6 +22,11 @@
     <input id="search" placeholder="Search products..." style="width:100%;padding:10px;border-radius:8px;border:1px solid #eee">
   </div>
   <div id="productsGrid" class="post-grid"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+    <button id="prevBtn" class="primary">Prev</button>
+    <div id="pageInfo" style="font-weight:700"></div>
+    <button id="nextBtn" class="primary">Next</button>
+  </div>
 </div>
 
 <script>
@@ -31,18 +36,25 @@ const logoutBtn = document.getElementById('logoutBtn');
 logoutBtn.onclick = () => { localStorage.removeItem('token'); localStorage.removeItem('role'); localStorage.removeItem('userId'); localStorage.removeItem('userEmail'); localStorage.removeItem('userName'); window.location='login.html'; };
 
 let all = [];
+let currentList = [];
+let currentPage = 0;
+const PAGE_SIZE = 4; // 2x2 per page
 async function loadProducts(){
   try{
     const res = await fetch('/posts');
     all = await res.json();
-    render(all);
+    currentList = all.slice();
+    currentPage = 0;
+    renderPage(currentPage);
   }catch(err){ console.error(err); document.getElementById('productsGrid').innerText='Error loading products'; }
 }
 
-function render(list){
+function renderPage(page){
   const el = document.getElementById('productsGrid');
-  if(!list.length) { el.innerText='No products'; return; }
-  el.innerHTML = list.map(p=>`
+  const start = page * PAGE_SIZE;
+  const slice = currentList.slice(start, start + PAGE_SIZE);
+  if(!slice.length) { el.innerText='No products'; document.getElementById('pageInfo').innerText = '0 / 0'; return; }
+  el.innerHTML = slice.map(p=>`
     <div class="post">
       ${p.image?`<img class="thumb" src="${p.image}" alt="${p.title}">`:''}
       <h3>${escapeHtml(p.title)}</h3>
@@ -51,18 +63,26 @@ function render(list){
       <div style="margin-top:8px"><a href="post.html?id=${p._id}">See more</a></div>
     </div>
   `).join('');
+  const total = Math.ceil(currentList.length / PAGE_SIZE) || 1;
+  document.getElementById('pageInfo').innerText = `${page+1} / ${total}`;
+  document.getElementById('prevBtn').disabled = page <= 0;
+  document.getElementById('nextBtn').disabled = page >= total-1;
 }
 
 function escapeHtml(unsafe){ return unsafe? unsafe.replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])):'' }
 
-loadProducts();
-
 document.getElementById('search').oninput = function(e){
   const q = (e.target.value||'').toLowerCase();
-  if(!q) return render(all);
-  const f = all.filter(p=> (p.title||'').toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q));
-  render(f);
+  if(!q) { currentList = all.slice(); currentPage = 0; return renderPage(currentPage); }
+  currentList = all.filter(p=> (p.title||'').toLowerCase().includes(q) || (p.content||'').toLowerCase().includes(q));
+  currentPage = 0;
+  renderPage(currentPage);
 }
+
+document.getElementById('prevBtn').onclick = function(){ if(currentPage>0){ currentPage--; renderPage(currentPage); } };
+document.getElementById('nextBtn').onclick = function(){ const total = Math.ceil(currentList.length / PAGE_SIZE); if(currentPage< total-1){ currentPage++; renderPage(currentPage); } };
+
+loadProducts();
 </script>
 </body>
 </html>

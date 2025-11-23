@@ -4,12 +4,14 @@
   --bg:#f0f5ff;
 }
 *{box-sizing:border-box}
+html,body{height:100%}
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: var(--bg);
   margin: 0;
-  padding: 20px;
-  color:#333;
+  padding: 18px;
+  color:#222;
+  -webkit-font-smoothing:antialiased;
 }
 nav.site-nav{
   background:var(--primary);
@@ -53,8 +55,8 @@ button.primary:hover{ opacity:0.95 }
 .post-grid{
   margin-top:20px;
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
   gap:18px;
+  grid-template-columns: repeat(4, 1fr); /* desktop default */
 }
 .post{
   background:#fff;
@@ -62,6 +64,8 @@ button.primary:hover{ opacity:0.95 }
   border-radius:10px;
   box-shadow:0 6px 18px rgba(0,0,0,0.06);
 }
+.post img.thumb{ display:block; width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px }
+.post-full{ width:100%; max-width:100%; height:auto; display:block; margin-bottom:12px; border-radius:8px }
 .post img.thumb{ display:block; width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px }
 .post-full{ width:100%; max-width:100%; height:auto; display:block; margin-bottom:12px; border-radius:8px }
 .post h3{ margin:4px 0 10px 0; color:var(--primary) }
@@ -72,20 +76,37 @@ button.primary:hover{ opacity:0.95 }
 .center { text-align:center }
 .nav-brand{ font-weight:800; font-size:18px }
 @media (max-width:900px){
-  .post-grid{ grid-template-columns:repeat(2,1fr) }
+  .post-grid{ grid-template-columns:repeat(3,1fr) }
   form.card{ width:95% }
 }
-@media (max-width:480px){
-  /* Mobile "app-like" layout: 2 columns on phones for compact grid */
+@media (max-width:700px){
+  .post-grid{ grid-template-columns:repeat(2,1fr); gap:14px }
+}
+
+@media (max-width:420px){
   :root{ --bg:#ffffff }
   body{ padding:10px }
   .post-grid{ grid-template-columns:repeat(2,1fr); gap:12px }
-}
-
-
-/* Make containers feel app-like on small devices */
-@media (max-width:420px){
   nav.site-nav{ border-radius:0; padding:12px }
   .container{ padding:8px; margin:8px auto }
-  form.card{ border-radius:10px }
+  form.card{ border-radius:10px; width:100%; margin:12px 0 }
+  .post img.thumb{ height:120px }
+  button.primary, a.btn-dark, button.btn-dark{ width:100%; box-sizing:border-box }
+}
+
+/* Very small narrow devices: single column fallback */
+@media (max-width:320px){
+  .post-grid{ grid-template-columns:1fr }
+  .post img.thumb{ height:110px }
+}
+
+/* Force 2x2 products page layout: two columns, two rows per page. */
+.products-page .post-grid{
+  grid-template-columns: repeat(2, 1fr) !important;
+  grid-auto-rows: auto;
+  gap:14px;
+}
+
+@media (max-width:320px){
+  .products-page .post-grid{ grid-template-columns:1fr !important }
 }
