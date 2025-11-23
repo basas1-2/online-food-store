@@ -101,12 +101,4 @@ button.primary:hover{ opacity:0.95 }
 }
 
 /* Force 2x2 products page layout: two columns, two rows per page. */
-.products-page .post-grid{
-  grid-template-columns: repeat(2, 1fr) !important;
-  grid-auto-rows: auto;
-  gap:14px;
-}
-
-@media (max-width:320px){
-  .products-page .post-grid{ grid-template-columns:1fr !important }
-}
+/* products-page rules removed (reverted) */
