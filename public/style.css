@@ -56,15 +56,20 @@ button.primary:hover{ opacity:0.95 }
   margin-top:20px;
   display:grid;
   gap:18px;
-  grid-template-columns: repeat(4, 1fr); /* desktop default */
+  /* Use responsive columns with a sensible minimum so each column gets equal width */
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
 .post{
   background:#fff;
   padding:16px;
   border-radius:10px;
   box-shadow:0 6px 18px rgba(0,0,0,0.06);
+  display:flex;
+  flex-direction:column;
 }
 .post img.thumb{ display:block; width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px }
+.post .post-body{ display:flex; flex-direction:column; flex:1 }
+.post .post-footer{ margin-top:10px }
 .post-full{ width:100%; max-width:100%; height:auto; display:block; margin-bottom:12px; border-radius:8px }
 .post img.thumb{ display:block; width:100%; height:160px; object-fit:cover; border-radius:8px; margin-bottom:8px }
 .post-full{ width:100%; max-width:100%; height:auto; display:block; margin-bottom:12px; border-radius:8px }
