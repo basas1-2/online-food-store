@@ -11,10 +11,11 @@
   <nav class="site-nav">
     <div class="nav-brand">Food store - Admin</div>
     <div>
-      <a href="index.html">Home</a>
-      <a id="navNotifications" href="notifications.html" style="display:none">Notifications</a>
-      <a id="logoutBtn" href="#">Logout</a>
-    </div>
+    <a href="index.html">Home</a>
+    <a id="navProducts" href="admin-products.html" style="display:none">Products</a>
+    <a id="navNotifications" href="notifications.html" style="display:none">Notifications</a>
+    <a id="logoutBtn" href="#">Logout</a>
+  </div>
   </nav>
 
   <div class="container">
@@ -46,7 +47,8 @@
       window.location = 'index.html';
     }
 
-        // show notifications link for logged-in admin
+        // show products and notifications link for logged-in admin
+        document.getElementById('navProducts').style.display = 'inline';
         document.getElementById('navNotifications').style.display = 'inline';
 
     document.getElementById('logoutBtn').onclick = () => {

@@ -46,6 +46,9 @@ button.primary{
   cursor:pointer;
   font-weight:700;
 }
+button.btn-dark, a.btn-dark{
+  background:#111; color:#fff; border:none; padding:10px 14px; border-radius:8px; text-decoration:none; display:inline-block; font-weight:700;
+}
 button.primary:hover{ opacity:0.95 }
 .post-grid{
   margin-top:20px;
@@ -73,5 +76,16 @@ button.primary:hover{ opacity:0.95 }
   form.card{ width:95% }
 }
 @media (max-width:480px){
-  .post-grid{ grid-template-columns:1fr }
+  /* Mobile "app-like" layout: 2 columns on phones for compact grid */
+  :root{ --bg:#ffffff }
+  body{ padding:10px }
+  .post-grid{ grid-template-columns:repeat(2,1fr); gap:12px }
+}
+
+
+/* Make containers feel app-like on small devices */
+@media (max-width:420px){
+  nav.site-nav{ border-radius:0; padding:12px }
+  .container{ padding:8px; margin:8px auto }
+  form.card{ border-radius:10px }
 }

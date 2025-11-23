@@ -39,11 +39,43 @@
                     return;
                 }
                 const p = await res.json();
-                document.getElementById('postDetail').innerHTML = `
-      ${p.image ? `<img class="post-full" src="${p.image}" alt="${p.title}">` : ''}
-      <h2 style="color:var(--primary)">${escapeHtml(p.title)}</h2>
-      <p>${escapeHtml(p.content)}</p>
-    `;
+                    document.getElementById('postDetail').innerHTML = `
+                        ${p.image ? `<img class="post-full" src="${p.image}" alt="${p.title}">` : ''}
+                        <h2 style="color:var(--primary)">${escapeHtml(p.title)}</h2>
+                        <p>${escapeHtml(p.content)}</p>
+                        <div style="margin-top:12px">
+                            <div>Price: <strong>$${p.price || 0}</strong></div>
+                            <label style="display:block;margin-top:8px">Quantity: <input id="pay-qty" type="number" min="1" value="1" style="width:80px;margin-left:8px"></label>
+                            <div style="margin-top:10px">
+                                <button id="payBtn" class="primary">Pay</button>
+                            </div>
+                        </div>
+                    `;
+                    // wire up pay button to use Stripe Checkout (falls back to /pay if Stripe not configured)
+                    document.getElementById('payBtn').onclick = async function(){
+                        const qty = parseInt(document.getElementById('pay-qty').value || '1',10) || 1;
+                        const buyerId = localStorage.getItem('userId') || '';
+                        const buyerName = localStorage.getItem('userName') || '';
+                        const buyerEmail = localStorage.getItem('userEmail') || '';
+                        if (!buyerEmail) { alert('Please login to make payment'); window.location='login.html'; return; }
+                        try {
+                            const res = await fetch('/posts/' + id + '/create-checkout-session', {
+                                method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ quantity: qty, buyerId, buyerName, buyerEmail })
+                            });
+                            const data = await res.json();
+                            if (!res.ok) { alert(data.msg || 'Checkout creation failed'); return; }
+                            if (!data.publishableKey) { // fallback to simple pay record
+                                const r2 = await fetch('/posts/' + id + '/pay', { method:'POST', headers:{'Content-Type':'application/json','Authorization': localStorage.getItem('token')||''}, body: JSON.stringify({ quantity: qty, buyerId, buyerName, buyerEmail }) });
+                                const j2 = await r2.json();
+                                if (!r2.ok) { alert(j2.msg || 'Payment failed'); return; }
+                                alert('Payment recorded: ' + j2.amount);
+                                window.location='index.html';
+                                return;
+                            }
+                            const stripe = Stripe(data.publishableKey);
+                            await stripe.redirectToCheckout({ sessionId: data.sessionId });
+                        } catch (err) { console.error(err); alert('Payment error'); }
+                    };
             } catch (err) {
                 console.error(err);
                 document.getElementById('postDetail').innerText = 'Error loading post';

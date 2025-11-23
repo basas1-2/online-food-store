@@ -20,6 +20,11 @@
 
   <div class="container">
     <h2>Latest Posts</h2>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+      <div style="flex:1">
+        <a class="btn-dark" href="products.html">View Products</a>
+      </div>
+    </div>
     <div id="posts" class="post-grid"></div>
   </div>
 
@@ -110,44 +115,7 @@
       }
     }
 
-    // load user notifications into panel
-    async function loadUserNotifications(who) {
-      const el = document.getElementById('userNotifications');
-      if (!who) { el.innerText = 'Please login to see notifications'; return; }
-      try {
-        const res = await fetch('/posts/notifications/user/' + encodeURIComponent(who));
-        if (!res.ok) { el.innerText = 'Error loading notifications'; return; }
-        const notes = await res.json();
-        if (!notes.length) { el.innerText = 'No notifications'; return; }
-        el.innerHTML = notes.map(n => `
-          <div style="border-bottom:1px solid #eee;padding:8px">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <div><strong>${n.message}</strong><br><small>${new Date(n.createdAt).toLocaleString()}</small></div>
-              <div>
-                ${n.read ? '<em style="color:green">Read</em>' : `<button onclick="markRead('${n._id}')">Mark read</button>`}
-              </div>
-            </div>
-            ${n.meta ? `<div style="font-size:13px;margin-top:6px">Amount: ${n.meta.amount || ''} &nbsp; Qty: ${n.meta.quantity || ''}</div>` : ''}
-          </div>
-        `).join('');
-      } catch (err) {
-        console.error(err);
-        el.innerText = 'Error loading notifications';
-      }
-    }
-
-    async function markRead(id) {
-      try {
-        const res = await fetch('/posts/notifications/' + id + '/read', { method: 'POST' });
-        if (!res.ok) return alert('Failed to mark read');
-        const who = localStorage.getItem('userId') || localStorage.getItem('userEmail');
-        loadUserNotifications(who);
-      } catch (err) { console.error(err); }
-    }
-
-    // auto-load current user's notifications
-    const who = localStorage.getItem('userId') || localStorage.getItem('userEmail');
-    if (who) loadUserNotifications(who);
+    // notifications panel was moved to a dedicated page; no in-page notifications here
   </script>
 
 </body>
